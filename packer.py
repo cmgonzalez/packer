@@ -1,5 +1,16 @@
 #!/usr/bin/env python
 """
+    Packer - a tool to create ZX Spectrum tap's Packs with a basic menu
+    Parameters
+
+    path: Path of the sources Taps files
+    tap: Output tap file name
+
+    title: Title of the Basic Menu
+    program: Basic Menu program name
+    
+
+
     Byte
     Tap Data
     00  Lenght of Block 0
@@ -38,13 +49,13 @@
     04 highlight paper color
     05 highlight ink color
 
-    """
+"""
 from os.path import isfile, join
 from os import listdir
 from argparse import ArgumentParser
 from array import array
 import math
-__version__ = "0.0.1"
+__version__ = "0.3"
 
 
 def get_parity(data):
@@ -92,9 +103,14 @@ def create_tap_header_block(title='', start=0, length=0, flag=0, data_type=3):
 def main():
 
     import os
-
-    files = os.listdir()
-    # print(tap_names)
+    black = 0
+    blue = 1
+    red = 2
+    magenta = 3
+    green = 4
+    cyan = 5
+    yellow = 6
+    white = 7
 
     parser = ArgumentParser(description="tappack",
                             epilog="Copyleft (C) 2020 Cristian Gonzalez",
@@ -103,30 +119,71 @@ def main():
     parser.add_argument("--version", action="version",
                         version="%(prog)s " + __version__)
     # parser.add_argument("--convert", action="store_true", default=False)
-    parser.add_argument("title", help="new name", nargs="?")
-    parser.add_argument("name", help="new name", nargs="?")
-    parser.add_argument("tap", help="tap to rename", nargs="?")
+    parser.add_argument("path", help="Source Tap file path", nargs="?")
+    parser.add_argument("tap", help="Output Tap file name", nargs="?")
+    parser.add_argument("title", help="Pack Title", nargs="?")
+    parser.add_argument("program", help="Basic Program Name", nargs="?")
+
+    parser.add_argument("paper", help="Menu Paper", nargs="?")
+    parser.add_argument("ink", help="Menu Ink", nargs="?")
+    parser.add_argument("border", help="Menu Border", nargs="?")
+
+    parser.add_argument("sel_paper", help="Selected item Paper", nargs="?")
+    parser.add_argument("sel_ink", help="Selected item Ink", nargs="?")
+
+    parser.add_argument("title_paper", help="Menu Title Paper", nargs="?")
+    parser.add_argument("title_ink", help="Menu Title ink", nargs="?")
+
+    # default values
+    border = black
+    paper = black
+    ink = white
+
+    sel_paper = red
+    sel_ink = white
+
+    title_paper = blue
+    title_ink = green
 
     args = parser.parse_args()
+
+    if not args.path:
+        parser.error("required parameter: path")
 
     if not args.tap:
         parser.error("required parameter: tap")
 
-    if not args.name:
-        parser.error("required parameter: name")
+    if not args.program:
+        parser.error("required parameter: program")
 
     if not args.title:
         parser.error("required parameter: title")
 
-    if len(args.name) > 10:
+    # Screen Colors
+    if args.border:
+        border = int(args.border)
+    if args.paper:
+        paper = int(args.paper)
+    if args.ink:
+        ink = int(args.ink)
+    # Selected Colors
+    if args.sel_paper:
+        sel_paper = int(args.sel_paper)
+    if args.sel_ink:
+        sel_ink = int(args.sel_ink)
+    # Title Colors
+    if args.title_paper:
+        title_paper = int(args.title_paper)
+    if args.title_ink:
+        title_ink = int(args.title_ink)
+
+    if len(args.program) > 10:
         parser.error("name max len is 10 chars")
+
     f = open(args.tap, 'wb')
 
-    #    create_tap_header_block(data_type=0),
-    #    create_tap_data_block(basic_data),
-    #    create_tap_header_block(start=code_start),
-    #    create_tap_data_block(code)
-    # code_data = bytearray()
+    # read path files
+    files = os.listdir(args.path)
     data_list = []
     tapnames = bytearray()
     files.sort()  # reverse=True
@@ -140,7 +197,7 @@ def main():
     # get max width n elements
     for file in files:
         if (file.endswith(".tap") or file.endswith(".TAP")) and file != args.tap:
-            tapfile = open(file, "rb")
+            tapfile = open(args.path+file, "rb")
             tapnames.extend(tapfile.read(14)[4:14])
             tapfile.close()
             elements += 1
@@ -175,16 +232,16 @@ def main():
     # string width
     extra_data[1] = string_max  # for centering
     # border color
-    extra_data[2] = 0
+    extra_data[2] = border
     # screen attribs
-    extra_data[3] = 0
-    extra_data[4] = 7
-    # highlighted attribs
-    extra_data[5] = 2
-    extra_data[6] = 7
+    extra_data[3] = paper
+    extra_data[4] = ink
+    # selected item attribs
+    extra_data[5] = sel_paper
+    extra_data[6] = sel_ink
     # title attribs
-    extra_data[7] = 1
-    extra_data[8] = 4
+    extra_data[7] = title_paper
+    extra_data[8] = title_ink
 
     # Menu title encoded at array title
     tap_data0 = basic_data.decode(encoding="utf-8", errors="strict")
@@ -231,13 +288,13 @@ def main():
 
     # Summary
     bytes_taps = bytearray()
-    print('Program: ', args.name, ' - Main Loader')
+    print('Program: ', args.program, ' - Main Loader')
     for file in files:
         if (file.endswith(".tap") or file.endswith(".TAP")) and file != args.tap:
-            tapfile = open(file, "rb")
+            tapfile = open(args.path+file, "rb")
             bytes_taps += tapfile.read()
             tapfile.close()
-            tapfile = open(file, "rb")
+            tapfile = open(args.path+file, "rb")
             print(' Program: ', tapfile.read(14)[
                   4:14].decode("utf-8").strip(), '-', file)
 
@@ -245,7 +302,7 @@ def main():
 
     # Rename Tap Basic main Program
     bytes_tapname = bytearray()
-    bytes_tapname.extend(map(ord, args.name[:10].ljust(10)))
+    bytes_tapname.extend(map(ord, args.program[:10].ljust(10)))
 
     bytes_loader = bytearray(bytes_loader)
     for x in range(0, 10):
