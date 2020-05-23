@@ -9,13 +9,13 @@
 
     Speccy Data
     04  Name Char 0
-    05  Name Char 1 
+    05  Name Char 1
     06  Name Char 2
     07  Name Char 3
-    08  Name Char 4 
+    08  Name Char 4
     09  Name Char 5
     10  Name Char 6
-    11  Name Char 7 
+    11  Name Char 7
     12  Name Char 8
     13  Name Char 9
     14  Next block Size 0
@@ -53,7 +53,7 @@ def get_parity(data):
     for b in data:
         # print("Byte " + hex(b) + " Paridad " + hex(parity))
         parity ^= b
-    #print("Paridad " + hex(parity))
+    # print("Paridad " + hex(parity))
     return parity
 
 
@@ -102,7 +102,7 @@ def main():
 
     parser.add_argument("--version", action="version",
                         version="%(prog)s " + __version__)
-    #parser.add_argument("--convert", action="store_true", default=False)
+    # parser.add_argument("--convert", action="store_true", default=False)
     parser.add_argument("title", help="new name", nargs="?")
     parser.add_argument("name", help="new name", nargs="?")
     parser.add_argument("tap", help="tap to rename", nargs="?")
@@ -139,7 +139,7 @@ def main():
 
     # get max width n elements
     for file in files:
-        if file.endswith(".tap") or file.endswith(".TAP"):
+        if (file.endswith(".tap") or file.endswith(".TAP")) and file != args.tap:
             tapfile = open(file, "rb")
             tapnames.extend(tapfile.read(14)[4:14])
             tapfile.close()
@@ -150,7 +150,7 @@ def main():
                 string_max = len(file)
 
     for file in files:
-        if file.endswith(".tap") or file.endswith(".TAP"):
+        if (file.endswith(".tap") or file.endswith(".TAP")) and file != args.tap:
             file = file.replace(".tap", "")
             file = file.replace(".TAP", "")
             file = file.ljust(string_width)
@@ -231,20 +231,35 @@ def main():
 
     # Summary
     bytes_taps = bytearray()
+    print('Program: ', args.name, ' - Main Loader')
     for file in files:
-        if file.endswith(".tap") or file.endswith(".TAP"):
+        if (file.endswith(".tap") or file.endswith(".TAP")) and file != args.tap:
             tapfile = open(file, "rb")
             bytes_taps += tapfile.read()
             tapfile.close()
             tapfile = open(file, "rb")
-            print('Program: ', tapfile.read(14)[
+            print(' Program: ', tapfile.read(14)[
                   4:14].decode("utf-8").strip(), '-', file)
 
             tapfile.close()
 
+    # Rename Tap Basic main Program
+    bytes_tapname = bytearray()
+    bytes_tapname.extend(map(ord, args.name[:10].ljust(10)))
+
+    bytes_loader = bytearray(bytes_loader)
+    for x in range(0, 10):
+        bytes_loader[x+4] = bytes_tapname[x]
+
+    # Calculate New Parity
+    parity = 0
+
+    for x in range(4, 20):
+        parity ^= bytes_loader[x]
+
+    bytes_loader[20] = parity
     # Write Data
-    bytes_tapfile = bytes_loader + bytes_titles + bytes_programs + bytes_taps
-    f.write(bytes_tapfile)
+    f.write(bytes_loader + bytes_titles + bytes_programs + bytes_taps)
 
 
 if __name__ == "__main__":
