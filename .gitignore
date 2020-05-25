@@ -1,1 +1,6 @@
 *.tap
+*.sna
+*.trd
+*.zip
+*.exe
+*.sh

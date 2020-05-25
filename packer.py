@@ -221,6 +221,7 @@ def main():
     basic_data = bytearray(5)
     # 5 Bytes
     basic_data[0] = 0x02
+
     basic_data[1] = elements + 2
     basic_data[2] = 0x00
     basic_data[3] = string_width
@@ -228,7 +229,7 @@ def main():
     # Packer extra data is encoded on first row for menu
     extra_data = bytearray(string_width)
     # elements
-    extra_data[0] = elements + 2
+    extra_data[0] = elements  # + 2
     # string width
     extra_data[1] = string_max  # for centering
     # border color
@@ -299,7 +300,7 @@ def main():
                   4:14].decode("utf-8").strip(), '-', file)
 
             tapfile.close()
-
+    print('Total Tap files:', elements)
     # Rename Tap Basic main Program
     bytes_tapname = bytearray()
     bytes_tapname.extend(map(ord, args.program[:10].ljust(10)))
