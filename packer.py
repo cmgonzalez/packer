@@ -205,12 +205,14 @@ def main():
             file = file.replace(".TAP", "")
             if len(file) > string_max:
                 string_max = len(file)
-
+    if string_max > 32:
+        string_max = 32
     for file in files:
         if (file.endswith(".tap") or file.endswith(".TAP")) and file != args.tap:
             file = file.replace(".tap", "")
             file = file.replace(".TAP", "")
             file = file.ljust(string_width)
+            file = file[0:string_max]
             data_list.extend(file[0:string_width])
 
     if elements == 0:
@@ -245,7 +247,6 @@ def main():
     extra_data[8] = title_ink
 
     # Menu title encoded at array title
-    tap_data0 = basic_data.decode(encoding="utf-8", errors="strict")
     titulo = args.title.center(string_width)
 
     tap_data = basic_data + extra_data + \
@@ -297,7 +298,7 @@ def main():
             tapfile.close()
             tapfile = open(args.path+file, "rb")
             print(' Program: ', tapfile.read(14)[
-                  4:14].decode("utf-8").strip(), '-', file)
+                  4:14].decode("utf-8", errors='replace').strip(), '-', file)
 
             tapfile.close()
     print('Total Tap files:', elements)
